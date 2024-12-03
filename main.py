@@ -1,28 +1,49 @@
+
 import argparse
 import json
 from datetime import datetime
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    
+    # Additional colors for priorities and warnings
+    HIGH_PRIORITY = '\033[91m'  # Bright red for high priority
+    MEDIUM_PRIORITY = '\033[93m'  # Yellow for medium priority
+    LOW_PRIORITY = '\033[92m'  # Green for low priority
+    
+    # Actions
+    DELETE_ACTION = '\033[95m'  # Magenta for delete warnings
+    EDIT_ACTION = '\033[94m'  # Blue for edit actions
+    
+    # Neutral or informational
+    INFO = '\033[90m'  # Gray for less critical information
+    RESET = '\033[0m'  # Alias for ENDC for easier readability
 
 # Main class to handle tasks
 class ToDoList:
     def __init__(self):
-        # List to hold tasks
         self.tasks = []
 
     def add_task(self, description, due_date=None, priority=None):
-        """Add a new task with description, optional due date, and priority."""
         due_date = datetime.strptime(due_date, '%Y-%m-%d').isoformat() if due_date else None
         task = {
             'id': len(self.tasks) + 1,
             'description': description,
-            'due_date': due_date,  # In ISO format or None
-            'priority': priority,  # 'low', 'medium', 'high' or None
+            'due_date': due_date,
+            'priority': priority,
             'completed': False
         }
         self.tasks.append(task)
         print(f"Task '{description}' added.")
 
     def list_tasks(self, filter_by=None, show_completed=False):
-        """List tasks with optional filtering by priority, due date, or status."""
         filtered_tasks = [
             task for task in self.tasks
             if (show_completed or not task['completed']) and 
@@ -39,7 +60,6 @@ class ToDoList:
             print(f"ID: {task['id']} | {task['description']} | Due: {due_date} | Priority: {task['priority']} | Status: {status}")
 
     def mark_completed(self, task_id):
-        """Mark a task as completed using the task ID."""
         task = next((task for task in self.tasks if task['id'] == task_id), None)
         if task:
             task['completed'] = True
@@ -48,7 +68,6 @@ class ToDoList:
             print(f"Task with ID {task_id} not found.")
 
     def edit_task(self, task_id, description=None, due_date=None, priority=None):
-        """Edit task details like description, due date, or priority."""
         task = next((task for task in self.tasks if task['id'] == task_id), None)
         if task:
             if description:
@@ -62,7 +81,6 @@ class ToDoList:
             print(f"Task with ID {task_id} not found.")
 
     def delete_task(self, task_id):
-        """Delete a task by ID."""
         task = next((task for task in self.tasks if task['id'] == task_id), None)
         if task:
             self.tasks.remove(task)
@@ -71,85 +89,120 @@ class ToDoList:
             print(f"Task with ID {task_id} not found.")
 
     def save_tasks(self, file_name='tasks.json'):
-        """Save tasks to a file (e.g., JSON) to make them persistent."""
         with open(file_name, 'w') as f:
             json.dump(self.tasks, f)
         print("Tasks saved to file.")
 
     def load_tasks(self, file_name='tasks.json'):
-        """Load tasks from a file on startup to restore saved tasks."""
         try:
             with open(file_name, 'r') as f:
                 self.tasks = json.load(f)
             print("Tasks loaded from file.")
         except FileNotFoundError:
-            # Handle case where file does not exist
             self.tasks = []
-            print("No saved tasks found, starting with an empty list.")
 
-# Function to handle command-line arguments
-def handle_args():
-    """Parse command-line arguments using argparse."""
-    parser = argparse.ArgumentParser(description="Command-Line To-Do List Application")
-    
-    # Define subcommands for add, list, mark, edit, delete, etc.
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-
-    # Add task command
-    add_parser = subparsers.add_parser('add', help='Add a new task')
-    add_parser.add_argument('description', type=str, help='Description of the task')
-    add_parser.add_argument('--due_date', type=str, help='Due date of the task (YYYY-MM-DD)')
-    add_parser.add_argument('--priority', type=str, choices=['low', 'medium', 'high'], help='Priority of the task')
-
-    # List tasks command
-    list_parser = subparsers.add_parser('list', help='List all tasks')
-    list_parser.add_argument('--filter_by', type=str, choices=['priority', 'due_date', 'status'], help='Filter tasks by priority, due date, or status')
-    list_parser.add_argument('--show_completed', action='store_true', help='Show completed tasks as well')
-
-    # Mark completed command
-    mark_parser = subparsers.add_parser('mark', help='Mark a task as completed')
-    mark_parser.add_argument('task_id', type=int, help='ID of the task to mark as completed')
-
-    # Edit task command
-    edit_parser = subparsers.add_parser('edit', help='Edit an existing task')
-    edit_parser.add_argument('task_id', type=int, help='ID of the task to edit')
-    edit_parser.add_argument('--description', type=str, help='New description for the task')
-    edit_parser.add_argument('--due_date', type=str, help='New due date for the task (YYYY-MM-DD)')
-    edit_parser.add_argument('--priority', type=str, choices=['low', 'medium', 'high'], help='New priority for the task')
-
-    # Delete task command
-    delete_parser = subparsers.add_parser('delete', help='Delete a task')
-    delete_parser.add_argument('task_id', type=int, help='ID of the task to delete')
-
-    return parser.parse_args()
-
-def main():
-    # Instantiate ToDoList class
+# Command-Line Interface for To-Do List
+def cli():
     todo_list = ToDoList()
-
-    # Load existing tasks from file
     todo_list.load_tasks()
 
-    # Parse command-line arguments
-    args = handle_args()
+    while True:
+        print("\nTo-Do List Application")
+        print("1. Add Task")
+        print("2. List Tasks")
+        print("3. Mark Task as Completed")
+        print("4. Edit Task")
+        print("5. Delete Task")
+        print("6. Exit")
+        choice = input("Choose an option: ")
 
-    # Handle each command (add, list, mark, edit, delete)
-    if args.command == 'add':
-        todo_list.add_task(args.description, args.due_date, args.priority)
-        todo_list.save_tasks()
-    elif args.command == 'list':
-        todo_list.list_tasks(args.filter_by, args.show_completed)
-    elif args.command == 'mark':
-        todo_list.mark_completed(args.task_id)
-        todo_list.save_tasks()
-    elif args.command == 'edit':
-        todo_list.edit_task(args.task_id, args.description, args.due_date, args.priority)
-        todo_list.save_tasks()
-    elif args.command == 'delete':
-        todo_list.delete_task(args.task_id)
-        todo_list.save_tasks()
-    else:
-        print("No valid command provided. Use --help for usage information.")
+        if choice == '1':
+            description = input("Enter task description: ")
+            due_date = input("Enter due date (YYYY-MM-DD) (optional): ")
+            due_date = due_date if due_date else None
+            priority = input(F"Enter priority ({bcolors.LOW_PRIORITY}low{bcolors.ENDC}, {bcolors.MEDIUM_PRIORITY}medium{bcolors.ENDC}, {bcolors.HIGH_PRIORITY}high{bcolors.ENDC}) {bcolors.INFO}(optional){bcolors.ENDC}: ")
+            priority = priority if priority in ['low', 'medium', 'high'] else None
+            todo_list.add_task(description, due_date, priority)
+            todo_list.save_tasks()
+
+        elif choice == '2':
+            show_completed = input(F"Show completed tasks? ({bcolors.OKGREEN}yes{bcolors.ENDC}/{bcolors.FAIL}no{bcolors.ENDC}):: ").strip().lower() == 'yes'
+            todo_list.list_tasks(show_completed=show_completed)
+
+        elif choice == '3':
+            try:
+                show_completed = input(f"Show all tasks? ({bcolors.OKGREEN}yes{bcolors.ENDC}/{bcolors.FAIL}no{bcolors.ENDC}): ").strip().lower() == 'yes'
+                todo_list.list_tasks(show_completed=True)
+                task_id = int(input("Enter task ID to mark as completed: "))
+                todo_list.mark_completed(task_id)
+                todo_list.save_tasks()
+            except ValueError:
+                print(f"{bcolors.WARNING}Invalid ID format. Please enter a number.{bcolors.ENDC}")
+
+        elif choice == '4':
+            try:
+                show_completed = input(F"Show all tasks? ({bcolors.OKGREEN}yes{bcolors.ENDC}/{bcolors.FAIL}no{bcolors.ENDC}): ").strip().lower() == 'yes'
+                todo_list.list_tasks(show_completed=True)
+                task_id = int(input("Enter task ID to edit: "))
+                description = input("Enter new description (leave blank to keep current): ")
+                due_date = input("Enter new due date (YYYY-MM-DD) (leave blank to keep current): ")
+                priority = input(f"Enter new priority ({bcolors.LOW_PRIORITY}low{bcolors.ENDC}, {bcolors.MEDIUM_PRIORITY}medium{bcolors.ENDC}, {bcolors.HIGH_PRIORITY}high{bcolors.ENDC}) {bcolors.INFO}(leave blank to keep current){bcolors.ENDC}: ")
+                todo_list.edit_task(task_id, description or None, due_date or None, priority or None)
+                todo_list.save_tasks()
+            except ValueError:
+                print(f"{bcolors.WARNING}Invalid ID format. Please enter a number.{bcolors.ENDC}")
+
+        elif choice == '5':
+            try:
+                show_completed = input(f"Show all tasks? ({bcolors.OKGREEN}yes{bcolors.ENDC}/{bcolors.FAIL}no{bcolors.ENDC}): ").strip().lower() == 'yes'
+                todo_list.list_tasks(show_completed=True)
+                task_id = int(input(f"{bcolors.DELETE_ACTION}Enter task ID to delete: {bcolors.ENDC}"))
+                todo_list.delete_task(task_id)
+                todo_list.save_tasks()
+            except ValueError:
+                print(f"{bcolors.WARNING}Invalid ID format. Please enter a number.{bcolors.ENDC}")
+
+        elif choice == '6':
+            print(f"{bcolors.WARNING}Invalid option. Please try again.{bcolors.ENDC}")
+            print(f"{bcolors.UNDERLINE}Exiting the application.{bcolors.ENDC}")
+            break
+
+        else:
+            print(f"{bcolors.WARNING}Invalid option. Please try again.{bcolors.ENDC}")
 
 if __name__ == '__main__':
-    main()
+    cli()
+
+'''
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    
+    # Additional colors for priorities and warnings
+    HIGH_PRIORITY = '\033[91m'  # Bright red for high priority
+    MEDIUM_PRIORITY = '\033[93m'  # Yellow for medium priority
+    LOW_PRIORITY = '\033[92m'  # Green for low priority
+    
+    # Actions
+    DELETE_ACTION = '\033[95m'  # Magenta for delete warnings
+    EDIT_ACTION = '\033[94m'  # Blue for edit actions
+    
+    # Neutral or informational
+    INFO = '\033[90m'  # Gray for less critical information
+    RESET = '\033[0m'  # Alias for ENDC for easier readability
+
+
+# Example Usage    
+print(f"{bcolors.HIGH_PRIORITY}High Priority Task: Finish project report{bcolors.ENDC}")
+print(f"{bcolors.MEDIUM_PRIORITY}Medium Priority Task: Buy groceries{bcolors.ENDC}")
+print(f"{bcolors.LOW_PRIORITY}Low Priority Task: Water the plants{bcolors.ENDC}")
+print(f"{bcolors.DELETE_ACTION}Warning: Are you sure you want to delete this task?{bcolors.ENDC}")
+print(f"{bcolors.INFO}Note: Editing tasks is only allowed for tasks you created.{bcolors.ENDC}")
+'''
